@@ -1,0 +1,8 @@
+# Ignore local database and platform tools
+vault.db
+.env
+tools/platform-tools/
+__pycache__/
+*.pyc
+.vscode/
+.idea/
