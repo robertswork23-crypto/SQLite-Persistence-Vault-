@@ -1,0 +1,87 @@
+{
+  "version": "1.0",
+  "name": "nivor-agent-engine-sanitized",
+  "description": "Sanitized, plug-and-play workflow for the Nivor Autonomous Agent Engine. API keys and local URLs removed; replace environment placeholders before running.",
+  "nodes": [
+    {
+      "id": "input-01",
+      "type": "user_input",
+      "config": {
+        "prompt_template": "User prompt goes here",
+        "max_tokens": 512
+      }
+    },
+    {
+      "id": "llm-openai-01",
+      "type": "llm",
+      "provider": "openai",
+      "config": {
+        "model": "gpt-4o-mini",
+        "temperature": 0.7,
+        "api_key": "${OPENAI_API_KEY}",
+        "api_key_source": "ENV",
+        "notes": "Do NOT hardcode an API key here. Set OPENAI_API_KEY in your environment."
+      }
+    },
+    {
+      "id": "llm-anthropic-01",
+      "type": "llm",
+      "provider": "anthropic",
+      "config": {
+        "model": "claude-2.1",
+        "temperature": 0.7,
+        "api_key": "${ANTHROPIC_API_KEY}",
+        "api_key_source": "ENV",
+        "notes": "Set ANTHROPIC_API_KEY in your environment if you use Anthropic nodes."
+      }
+    },
+    {
+      "id": "pipeline-router-01",
+      "type": "router",
+      "config": {
+        "strategy": "rule_based",
+        "rules": [
+          {
+            "match": ".*sales.*",
+            "route_to": "sales-subpipeline"
+          }
+        ]
+      }
+    },
+    {
+      "id": "memory-sqlite-01",
+      "type": "persistence",
+      "provider": "sqlite",
+      "config": {
+        "db_path": "${NIVOR_PERSISTENCE_DB}",
+        "db_path_source": "ENV",
+        "notes": "Replace with an absolute path or set NIVOR_PERSISTENCE_DB env var. Do not include local dev-only paths."
+      }
+    },
+    {
+      "id": "outbound-webhook-01",
+      "type": "action",
+      "subtype": "webhook",
+      "config": {
+        "url": "${OUTBOUND_WEBHOOK_URL}",
+        "url_source": "ENV",
+        "auth": null,
+        "notes": "Strip local URLs and auth. Use environment variables or secrets."
+      }
+    }
+  ],
+  "pipelines": {
+    "default": [
+      "input-01",
+      "llm-openai-01",
+      "memory-sqlite-01",
+      "outbound-webhook-01"
+    ],
+    "sales-subpipeline": [
+      "input-01",
+      "llm-anthropic-01",
+      "memory-sqlite-01"
+    ]
+  },
+  "secrets_instructions": "All secret values MUST be provided through environment variables or a secret manager. Replace placeholders like ${OPENAI_API_KEY} with real values in your deployment environment; do NOT commit keys to Git."
+}
